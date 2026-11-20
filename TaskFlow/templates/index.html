@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TaskFlow | Gestão de tarefas</title>
+  <style>
+    :root { color-scheme: light; --ink:#1f2937; --muted:#64748b; --line:#dbe3ee; --bg:#f4f7fb; --accent:#3157c8; }
+    * { box-sizing:border-box; } body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 system-ui,-apple-system,Segoe UI,sans-serif; }
+    header { background:#172554; color:white; padding:28px max(20px,calc((100% - 1100px)/2)); } header h1 { margin:0 0 4px; } header p { margin:0; color:#dbeafe; }
+    main { max-width:1100px; margin:24px auto; padding:0 18px; display:grid; gap:20px; } .panel { background:white; border:1px solid var(--line); border-radius:14px; padding:20px; box-shadow:0 4px 18px #1e293b0a; }
+    h2 { margin:0 0 14px; font-size:1.2rem; } label { display:block; font-weight:600; font-size:.9rem; margin-bottom:5px; } input,textarea,select { width:100%; padding:10px 11px; border:1px solid #cbd5e1; border-radius:8px; font:inherit; background:white; } textarea { resize:vertical; }
+    .form-grid { display:grid; grid-template-columns:2fr 2fr 1fr; gap:12px; } .field { min-width:0; } button { border:0; border-radius:8px; padding:10px 13px; background:var(--accent); color:white; font-weight:650; cursor:pointer; } button.secondary { background:#e2e8f0; color:#1e293b; } button.danger { background:#b91c1c; } .create { margin-top:14px; }
+    .filters { display:grid; grid-template-columns:1fr 1fr auto; gap:12px; align-items:end; } .task-list { display:grid; gap:12px; margin-top:16px; } .task { border:1px solid var(--line); border-radius:12px; padding:15px; display:grid; gap:12px; } .task-head { display:flex; gap:12px; justify-content:space-between; align-items:flex-start; } .task h3 { margin:0; overflow-wrap:anywhere; } .description { margin:5px 0 0; color:var(--muted); white-space:pre-wrap; overflow-wrap:anywhere; }
+    .pills { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; } .pill { font-size:.78rem; background:#eff6ff; color:#1d4ed8; border-radius:999px; padding:3px 9px; } .pill.high { background:#fee2e2; color:#991b1b; } .pill.low { background:#dcfce7; color:#166534; } .actions { display:flex; flex-wrap:wrap; gap:8px; align-items:end; } .actions form { display:flex; gap:6px; align-items:end; } .actions label { font-size:.75rem; } .actions select { min-width:145px; }
+    details { border-top:1px solid var(--line); padding-top:10px; } summary { cursor:pointer; color:var(--accent); font-weight:600; } .edit-grid { display:grid; grid-template-columns:2fr 2fr 1fr auto; gap:10px; margin-top:10px; align-items:end; } .empty { text-align:center; color:var(--muted); padding:24px; }
+    @media(max-width:700px) { .form-grid,.filters,.edit-grid { grid-template-columns:1fr; } .task-head { display:block; } .actions form { flex-wrap:wrap; } }
+  </style>
+</head>
+<body>
+<header><h1>TaskFlow</h1><p>Organize tarefas, acompanhe prioridades e visualize o andamento do trabalho.</p></header>
+<main>
+  <section class="panel">
+    <h2>Nova tarefa</h2>
+    <form action="{{ url_for('add_task') }}" method="post">
+      <div class="form-grid">
+        <div class="field"><label for="title">Título *</label><input id="title" name="title" maxlength="100" required placeholder="Ex.: Conferir pedidos do dia"></div>
+        <div class="field"><label for="description">Descrição</label><input id="description" name="description" placeholder="Detalhes da tarefa (opcional)"></div>
+        <div class="field"><label for="priority">Prioridade</label><select id="priority" name="priority"><option>Alta</option><option selected>Média</option><option>Baixa</option></select></div>
+      </div>
+      <button class="create" type="submit">Adicionar tarefa</button>
+    </form>
+  </section>
+  <section class="panel">
+    <h2>Minhas tarefas</h2>
+    <form class="filters" action="{{ url_for('index') }}" method="get">
+      <div><label for="filter-status">Filtrar por status</label><select id="filter-status" name="status"><option value="">Todos</option>{% for status in statuses %}<option value="{{ status }}" {% if selected_status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></div>
+      <div><label for="filter-priority">Filtrar por prioridade</label><select id="filter-priority" name="priority"><option value="">Todas</option>{% for priority in priorities %}<option value="{{ priority }}" {% if selected_priority == priority %}selected{% endif %}>{{ priority }}</option>{% endfor %}</select></div>
+      <div class="actions"><button type="submit">Filtrar</button><a href="{{ url_for('index') }}"><button class="secondary" type="button">Limpar</button></a></div>
+    </form>
+    <div class="task-list">
+      {% for task in tasks %}
+      <article class="task">
+        <div class="task-head"><div><h3>{{ task.title }}</h3>{% if task.description %}<p class="description">{{ task.description }}</p>{% endif %}<div class="pills"><span class="pill {% if task.priority == 'Alta' %}high{% elif task.priority == 'Baixa' %}low{% endif %}">Prioridade: {{ task.priority }}</span><span class="pill">{{ task.status }}</span></div></div></div>
+        <div class="actions">
+          <form action="{{ url_for('update_status', task_id=task.id) }}" method="post"><div><label for="status-{{ task.id }}">Alterar status</label><select id="status-{{ task.id }}" name="status">{% for status in statuses %}<option value="{{ status }}" {% if task.status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></div><button type="submit">Salvar status</button></form>
+          <form action="{{ url_for('delete_task', task_id=task.id) }}" method="post" onsubmit="return confirm('Deseja excluir esta tarefa?')"><button class="danger" type="submit">Excluir</button></form>
+        </div>
+        <details><summary>Editar tarefa</summary><form class="edit-grid" action="{{ url_for('edit_task', task_id=task.id) }}" method="post"><div><label for="title-{{ task.id }}">Título</label><input id="title-{{ task.id }}" name="title" value="{{ task.title }}" maxlength="100" required></div><div><label for="description-{{ task.id }}">Descrição</label><input id="description-{{ task.id }}" name="description" value="{{ task.description }}"></div><div><label for="priority-{{ task.id }}">Prioridade</label><select id="priority-{{ task.id }}" name="priority">{% for priority in priorities %}<option {% if task.priority == priority %}selected{% endif %}>{{ priority }}</option>{% endfor %}</select></div><button type="submit">Salvar edição</button></form></details>
+      </article>
+      {% else %}<div class="empty">Nenhuma tarefa encontrada. Cadastre uma tarefa ou altere os filtros.</div>{% endfor %}
+    </div>
+  </section>
+</main>
+</body>
+</html>
