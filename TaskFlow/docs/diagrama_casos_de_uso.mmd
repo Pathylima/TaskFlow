@@ -1,0 +1,16 @@
+flowchart LR
+    usuario[Usuário da equipe]
+    subgraph sistema[TaskFlow]
+      UC1((Cadastrar tarefa))
+      UC2((Listar tarefas))
+      UC3((Editar tarefa))
+      UC4((Excluir tarefa))
+      UC5((Alterar status))
+      UC6((Filtrar por status/prioridade))
+    end
+    usuario --- UC1
+    usuario --- UC2
+    usuario --- UC3
+    usuario --- UC4
+    usuario --- UC5
+    usuario --- UC6
